@@ -25,8 +25,8 @@ export type AdminArticle = {
 
 export type Category = { id: number; name: string; slug: string };
 
-const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "");
-export const IS_MOCK = !BASE;
+const BASE = "https://memberspesial.art/api-php";
+export const IS_MOCK = false; // Matikan mode bohong-bohongan secara paksa
 
 const TOKEN_KEY = "kickoff_admin_token";
 const MOCK_ARTICLES_KEY = "kickoff_mock_articles";
