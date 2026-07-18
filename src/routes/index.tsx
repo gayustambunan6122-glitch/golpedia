@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Menu, Search, Bell } from "lucide-react";
@@ -41,9 +41,8 @@ function Home() {
     refetchInterval: 30_000, // Refresh otomatis setiap 30 detik jika ada berita baru
   });
 
-  // Membagi artikel untuk slider utama (menggunakan kolom is_published sebagai filter hero jika diperlukan, 
-  // atau kamu bisa atur logika tersendiri. Di sini kita ambil artikel terbaru/pertama sebagai hero).
-  const hero = articles.slice(0, 3).map(a => ({
+  // Ambil hanya 1 artikel terbaru untuk dijadikan Hero Slider di atas
+  const hero = articles.slice(0, 1).map(a => ({
     id: String(a.id),
     title: a.title,
     slug: a.slug,
@@ -58,7 +57,8 @@ function Home() {
     hero: true
   }));
 
-  const rest = articles.slice(3).map(a => ({
+  // Sisa seluruh artikel lainnya otomatis turun masuk ke daftar bawah (The Feed)
+  const rest = articles.slice(1).map(a => ({
     id: String(a.id),
     title: a.title,
     slug: a.slug,
@@ -101,8 +101,18 @@ function Home() {
                     ))}
                   </div>
                 </div>
+                {/* Bagian Feed yang dibungkus Link agar bisa diklik */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  {rest.map((a) => <ArticleCard key={a.id} article={a} />)}
+                  {rest.map((a) => (
+                    <Link
+                      key={a.id}
+                      to="/article/$slug"
+                      params={{ slug: a.slug }}
+                      className="block transition-transform active:scale-95"
+                    >
+                      <ArticleCard article={a} />
+                    </Link>
+                  ))}
                 </div>
               </section>
             </>
