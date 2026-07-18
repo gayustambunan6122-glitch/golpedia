@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Menu, Search, Bell } from "lucide-react";
 import { getLiveMatches } from "@/lib/football-api.functions";
-import { MOCK_ARTICLES, MOCK_LIVE } from "@/lib/mock-data";
+import { MOCK_LIVE } from "@/lib/mock-data";
+import { api, type AdminArticle } from "@/services/admin-api"; // Kita panggil fungsi listArticles dari sini
 import { LiveTicker } from "@/components/LiveTicker";
 import { HeroSlider } from "@/components/HeroSlider";
 import { ArticleCard } from "@/components/ArticleCard";
@@ -25,44 +26,92 @@ export const Route = createFileRoute("/")({
 function Home() {
   const [tab, setTab] = useState<Tab>("home");
 
-  const { data } = useQuery({
+  // 1. Fetch data Live Matches (bawaan)
+  const { data: matchData } = useQuery({
     queryKey: ["live-matches"],
     queryFn: () => getLiveMatches(),
     initialData: { matches: MOCK_LIVE, source: "mock" as const },
     refetchInterval: 60_000,
   });
 
-  const hero = MOCK_ARTICLES.filter((a) => a.hero);
-  const rest = MOCK_ARTICLES.filter((a) => !a.hero);
+  // 2. Fetch data Artikel Asli dari Database MySQL cPanel
+  const { data: articles = [], isLoading } = useQuery<AdminArticle[]>({
+    queryKey: ["public-articles"],
+    queryFn: () => api.listArticles(),
+    refetchInterval: 30_000, // Refresh otomatis setiap 30 detik jika ada berita baru
+  });
+
+  // Membagi artikel untuk slider utama (menggunakan kolom is_published sebagai filter hero jika diperlukan, 
+  // atau kamu bisa atur logika tersendiri. Di sini kita ambil artikel terbaru/pertama sebagai hero).
+  const hero = articles.slice(0, 3).map(a => ({
+    id: String(a.id),
+    title: a.title,
+    slug: a.slug,
+    summary: a.summary,
+    cover: a.cover_image || "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1200&q=70",
+    tag: a.tag || "#Sports",
+    tagColor: "purple" as const,
+    author: "Admin",
+    reactions: a.reactions_count || 0,
+    comments: a.comments_count || 0,
+    minutesAgo: 1,
+    hero: true
+  }));
+
+  const rest = articles.slice(3).map(a => ({
+    id: String(a.id),
+    title: a.title,
+    slug: a.slug,
+    summary: a.summary,
+    cover: a.cover_image || "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1200&q=70",
+    tag: a.tag || "#Sports",
+    tagColor: "pink" as const,
+    author: "Admin",
+    reactions: a.reactions_count || 0,
+    comments: a.comments_count || 0,
+    minutesAgo: 5
+  }));
 
   return (
     <div className="min-h-screen bg-background pb-24">
       <Header />
-      <LiveTicker matches={data.matches} source={data.source} />
+      <LiveTicker matches={matchData.matches} source={matchData.source} />
 
       {tab === "home" && (
         <>
-          <HeroSlider articles={hero} />
-          <section className="px-4 pt-6">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-black tracking-tight">📰 The Feed</h2>
-              <div className="no-scrollbar flex gap-1.5 overflow-x-auto text-xs">
-                {["All", "TransferRumor", "UCL", "PremierLeague", "EpicFail"].map((t, i) => (
-                  <button key={t} className={`shrink-0 rounded-full px-3 py-1 font-black uppercase tracking-wide ${i === 0 ? "bg-primary text-primary-foreground glow-purple" : "bg-secondary text-muted-foreground"}`}>
-                    #{t}
-                  </button>
-                ))}
-              </div>
+          {isLoading ? (
+            <div className="flex justify-center py-10 text-sm font-bold text-muted-foreground animate-pulse">
+              ⚡ LOADING THE FRESH FEED...
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {rest.map((a) => <ArticleCard key={a.id} article={a} />)}
+          ) : articles.length === 0 ? (
+            <div className="text-center py-12 text-sm text-muted-foreground font-bold">
+              📭 Belum ada artikel di database MySQL cPanel kamu.
             </div>
-          </section>
+          ) : (
+            <>
+              <HeroSlider articles={hero} />
+              <section className="px-4 pt-6">
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-lg font-black tracking-tight">📰 The Feed</h2>
+                  <div className="no-scrollbar flex gap-1.5 overflow-x-auto text-xs">
+                    {["All", "TransferRumor", "UCL", "PremierLeague", "EpicFail"].map((t, i) => (
+                      <button key={t} className={`shrink-0 rounded-full px-3 py-1 font-black uppercase tracking-wide ${i === 0 ? "bg-primary text-primary-foreground glow-purple" : "bg-secondary text-muted-foreground"}`}>
+                        #{t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {rest.map((a) => <ArticleCard key={a.id} article={a} />)}
+                </div>
+              </section>
+            </>
+          )}
           <StandingsWidget />
         </>
       )}
 
-      {tab === "live" && <LiveView matches={data.matches} source={data.source} />}
+      {tab === "live" && <LiveView matches={matchData.matches} source={matchData.source} />}
       {tab === "leagues" && <StandingsWidget />}
       {tab === "me" && <MeView />}
 
