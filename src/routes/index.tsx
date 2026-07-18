@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Menu, Search, Bell } from "lucide-react";
 import { getLiveMatches } from "@/lib/football-api.functions";
 import { MOCK_LIVE } from "@/lib/mock-data";
-import { api, type AdminArticle } from "@/services/admin-api"; // Kita panggil fungsi listArticles dari sini
+import { api, type AdminArticle } from "@/lib/admin-api";
 import { LiveTicker } from "@/components/LiveTicker";
 import { HeroSlider } from "@/components/HeroSlider";
 import { ArticleCard } from "@/components/ArticleCard";
