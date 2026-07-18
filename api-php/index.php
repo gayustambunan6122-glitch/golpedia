@@ -39,7 +39,7 @@ try {
         $pw    = (string)($b['password'] ?? '');
         if (
             strcasecmp($email, $cfg['admin']['email']) !== 0 ||
-            !password_verify($pw, $cfg['admin']['password_hash'])
+            $pw !== $cfg['admin']['password_hash']
         ) {
             http_response_code(401);
             echo json_encode(['error' => 'Invalid credentials']);
